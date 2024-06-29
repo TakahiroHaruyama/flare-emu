@@ -727,3 +727,9 @@ def _wcsdupHook(eh, address, argv, funcName, userData):
     
 def _modHook(eh, address, argv, funcName, userData):
     eh.uc.reg_write(eh.regs["ret"], argv[0] % argv[1])
+
+def _LoadLibraryAHook(eh, address, argv, funcName, userData):
+    eh.uc.reg_write(eh.regs["ret"], 0xbaadf00d)
+
+def _GetProcAddressHook(eh, address, argv, funcName, userData):
+    eh.uc.reg_write(eh.regs["ret"], 0xbaadf00d)

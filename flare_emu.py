@@ -28,7 +28,8 @@ import flare_emu_hooks
 import types
 import sys
 
-
+import idc
+CAPA_CMT = '; CAPA (basic block): encode data using XOR'
 
 PAGESIZE = 0x1000
 PAGEALIGNCHECK = 0xfff
@@ -272,6 +273,7 @@ class EmuHelper():
             except:
                 self.logger.error("error importing flare_emu_ida: specify samplePath to use radare2 or run under IDA Pro 7+")
                 return
+
             self.analysisHelper = flare_emu_ida.IdaProAnalysisHelper(self)
             self.analysisHelperFramework = "IDA Pro"
             import idaapi
@@ -1436,6 +1438,10 @@ class EmuHelper():
         
         # builtins
         self.apiHooks["umodsi3"] = flare_emu_hooks._modHook
+
+        # Added to just return !0
+        self.apiHooks["LoadLibraryA"] = flare_emu_hooks._LoadLibraryAHook
+        self.apiHooks["GetProcAddress"] = flare_emu_hooks._GetProcAddressHook
         
         self.allocMap = {}
         
@@ -1861,7 +1867,10 @@ class EmuHelper():
             # check if we are out of our block bounds or re-entering our block in a loop
             bbEnd = flow[paths[self.pathIdx][self.blockIdx]][1]
             bbStart = flow[paths[self.pathIdx][self.blockIdx]][0]
-            if address == bbStart and self.enteredBlock is True:
+
+            #if address == bbStart and self.enteredBlock is True:
+            ext_cmt = idc.get_extra_cmt(address, idc.E_PREV)
+            if address == bbStart and self.enteredBlock is True and ext_cmt != CAPA_CMT:
                 if self.blockIdx < len(paths[self.pathIdx]) - 1:
                     self.logger.debug("loop re-entering block #%d (%s -> %s), forcing PC to %s" %
                                   (self.blockIdx, self.hexString(bbStart), self.hexString(bbEnd),
